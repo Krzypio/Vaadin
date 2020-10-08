@@ -1,0 +1,11 @@
+Project: "Maven Project"
+Language: "Java"
+Spring Boot: "2.3.4"
+Project Metadata: ...
+Packaging: "Jar"
+Java: "11"
+Dependencies:
+	Vaadin
+	H2 Database
+	Spring Data JPA
+	Validation

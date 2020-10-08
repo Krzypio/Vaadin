@@ -1,0 +1,11 @@
+File>Settings>Editor>General>Auto Import
+Add unambigous imports on the fly
+Optimize imports on the fly (for current project)
+
+Exclude from import and competition:
+	com.sun
+	java.awt
+	javafx.scene
+	javafs.swing
+	jdk.internal
+	sun.plugin
