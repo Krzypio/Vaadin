@@ -1,0 +1,20 @@
+/* List view */
+.container-view .content {
+    display: flex;
+}
+
+.container-view .container_grid {
+    flex: 2;
+}
+
+.container-view .container-form {
+    flex: 1;
+    padding: var(--lumo-space-m);
+}
+
+@media all and (max-width: 1100px) {
+    .container-view.editing .toolbar,
+    .container-view.editing .container-grid {
+        display: none;
+   }
+}
