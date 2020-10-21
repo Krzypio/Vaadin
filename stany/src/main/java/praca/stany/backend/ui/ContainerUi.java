@@ -97,10 +97,10 @@ public class ContainerUi extends VerticalLayout {
         } else {
             //Usuwanie potomstwa i container z listy
             List<Container> parentBoxList = containerService.findAll();
-            parentBoxList.removeAll(container.getAllDescendants());
+            //parentBoxList.removeAll(container.getAllDescendants());
 
             //Kontrola usuwania parent dla edit
-            if (!add) parentBoxList.remove(container); //blokuje add
+            //if (!add) parentBoxList.remove(container); //blokuje add
 
             form.setParentComboBox(parentBoxList);
 

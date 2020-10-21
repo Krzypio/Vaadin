@@ -1,5 +1,6 @@
 package praca.stany.backend.service;
 
+import com.vaadin.flow.component.notification.Notification;
 import org.springframework.stereotype.Service;
 import praca.stany.backend.entity.Container;
 import praca.stany.backend.repository.ContainerRepository;
@@ -42,6 +43,20 @@ public class ContainerService {
     }
 
     public void save(Container container){
+        //Cyklicznosc grafu wykluczona
+        if (container.getAllDescendants().contains(container.getParent())){
+            LOGGER.log(Level.SEVERE, "Container parent is between his descendants. Cycles in graph are forbidden.");
+            System.out.println();
+            Notification.show("Container parent is between his descendants. Cycles in graph are forbidden.");
+            return;
+        }
+        if (container==container.getParent()){
+            LOGGER.log(Level.SEVERE, "Container itself and its parent are the same. Cycles in graph are forbidden.");
+            System.out.println("Container itself and its parent are the same. Cycles in graph are forbidden.");
+            Notification.show("Container parent is between his descendants. Cycles in graph are forbidden.");
+            return;
+        }
+
         if(container == null){
             LOGGER.log(Level.SEVERE, "Container is null. Are you sure you have connected your form to the application?");
             return;
