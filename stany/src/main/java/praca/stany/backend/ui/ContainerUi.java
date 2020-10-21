@@ -54,7 +54,7 @@ public class ContainerUi extends VerticalLayout {
         Button addButton = new Button("Add");
         addButton.addClickListener(click -> addContainer());
         Button editButton = new Button ("Edit");
-        editButton.addClickListener(click -> editContainer(grid.asSingleSelect().getValue()));
+        editButton.addClickListener(click -> editContainer(grid.asSingleSelect().getValue(), false));
 
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
@@ -67,7 +67,7 @@ public class ContainerUi extends VerticalLayout {
     private void addContainer() {
         Container actual = grid.asSingleSelect().getValue();
         grid.asSingleSelect().clear();
-        editContainer(new Container(null, actual));
+        editContainer(new Container(null, actual), true);
     }
 
     private void configureGrid() {
@@ -91,10 +91,19 @@ public class ContainerUi extends VerticalLayout {
         grid.expand(containerService.findAll());
     }
 
-    public void editContainer(Container container) {
+    public void editContainer(Container container, boolean add) {   //add kontrola usuwania parent
         if (container == null) {
             closeEditor();
         } else {
+            //Usuwanie potomstwa i container z listy
+            List<Container> parentBoxList = containerService.findAll();
+            parentBoxList.removeAll(container.getAllDescendants());
+
+            //Kontrola usuwania parent dla edit
+            if (!add) parentBoxList.remove(container); //blokuje add
+
+            form.setParentComboBox(parentBoxList);
+
             form.setContainer(container);
             form.setVisible(true);
             addClassName("editing");

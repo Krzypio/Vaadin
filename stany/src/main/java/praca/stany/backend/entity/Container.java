@@ -54,4 +54,31 @@ public class Container extends AbstractEntity {
         this.name = name;
         this.parent = parent;
     }
+
+    public String getHierarchicalName(){
+        String hierarchicalName;
+        if (getParent() != null)
+            return  getParent().getHierarchicalName() + ">" + getName();
+        else
+            return getName();
+    }
+
+    public Set<Container> getAllDescendants() {
+        Set<Container> descendants = getChildren();
+        for (Container descendant : descendants) {
+            descendants.addAll(descendant.getAllDescendants());
+        }//for
+        return descendants;
+    }
+
+    public int getAncestorsNumber(){
+        return getAncestorsNumber(this);
+    }
+
+    private int getAncestorsNumber(Container container){
+        int no = 0;
+        if (getParent() != null)
+            no += 1 + getAncestorsNumber(container.getParent());
+        return no;
+    }
 }

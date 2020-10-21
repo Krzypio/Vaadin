@@ -8,12 +8,15 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.shared.Registration;
+import org.hibernate.event.spi.DeleteEvent;
 import praca.stany.backend.entity.Container;
 
 import java.util.Collections;
@@ -22,6 +25,7 @@ import java.util.List;
 
 public class ContainerForm extends FormLayout {
     private Container container;
+
     TextField name = new TextField("name");
     ComboBox<Container> parent = new ComboBox<>("Parent");
 
@@ -36,7 +40,7 @@ public class ContainerForm extends FormLayout {
         binder.bindInstanceFields(this);
 
         parent.setItems(containers);
-        parent.setItemLabelGenerator(Container::getName);
+        parent.setItemLabelGenerator(Container::getHierarchicalName);
 
         add(name,
                 parent,
@@ -50,12 +54,7 @@ public class ContainerForm extends FormLayout {
 
     public void setParentComboBox(List<Container> containers){
         //Sortowanie
-        Collections.sort(containers, new Comparator<Container>() {
-            @Override
-            public int compare(Container o1, Container o2) {
-                return o1.getName().compareTo(o2.getName());
-            }
-        });
+        containers.sort(Comparator.comparing(Container::getName));
         parent.setItems(containers);
     }
 
