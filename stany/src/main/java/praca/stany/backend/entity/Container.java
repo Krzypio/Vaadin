@@ -2,9 +2,7 @@ package praca.stany.backend.entity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 public class Container extends AbstractEntity {
@@ -71,14 +69,30 @@ public class Container extends AbstractEntity {
         return descendants;
     }
 
+    public Set<Container> getAllAncestors(){
+        return getAllAncestors(this);
+    }
+
+    private Set<Container> getAllAncestors(Container node){
+        Set<Container> ancestors = new HashSet<>();
+        if(node.getParent() != null){
+            ancestors.add(node.getParent());
+            for (Container ancestor: ancestors) {
+                ancestors.addAll(ancestor.getAllAncestors(ancestor));
+            }
+        }
+        return ancestors;
+    }
+
     public int getAncestorsNumber(){
         return getAncestorsNumber(this);
     }
 
     private int getAncestorsNumber(Container container){
         int no = 0;
-        if (getParent() != null)
+        if (container.getParent() != null) {
             no += 1 + getAncestorsNumber(container.getParent());
+        }
         return no;
     }
 }

@@ -27,6 +27,7 @@ import java.util.List;
 public class ContainerForm extends FormLayout {
     private Container container;
 
+    Label operation = new Label();
     TextField name = new TextField("name");
     ComboBox<Container> parent = new ComboBox<>("Parent");
 
@@ -40,10 +41,11 @@ public class ContainerForm extends FormLayout {
         addClassName("container-form");
         binder.bindInstanceFields(this);
 
+        parent.setClearButtonVisible(true);
         parent.setItems(containers);
         parent.setItemLabelGenerator(Container::getHierarchicalName);
 
-        add(name,
+        add(operation, name,
                 parent,
                 createButtonsLayout());
     }
@@ -73,6 +75,10 @@ public class ContainerForm extends FormLayout {
         binder.addStatusChangeListener(e -> save.setEnabled(binder.isValid()));
 
         return new HorizontalLayout(save, delete, close);
+    }
+
+    public void setOperationName(String operation) {
+        this.operation.setText(operation);
     }
 
     private void validateAndSave() {

@@ -2,9 +2,11 @@ package praca.stany.backend.ui;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -15,6 +17,7 @@ import praca.stany.backend.entity.Container;
 import praca.stany.backend.form.ContainerForm;
 import praca.stany.backend.service.ContainerService;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Route("")
@@ -22,7 +25,9 @@ import java.util.List;
 public class ContainerUi extends VerticalLayout {
     private ContainerService containerService;
     private TreeGrid<Container> grid = new TreeGrid<>(Container.class);
-    private TextField filterText = new TextField();
+    //private TextField filterText = new TextField();
+    ComboBox<Container> searchBox = new ComboBox<>();
+
     private ContainerForm form;
 
     public ContainerUi(ContainerService containerService){
@@ -30,6 +35,9 @@ public class ContainerUi extends VerticalLayout {
         addClassName("container-view");
         setSizeFull();
         configureGrid();
+
+        searchBox.setItems(containerService.findAll());
+        searchBox.setItemLabelGenerator(Container::getHierarchicalName);
 
         form = new ContainerForm(containerService.findAll());
         form.addListener(ContainerForm.SaveEvent.class, this::saveContainer);
@@ -46,10 +54,13 @@ public class ContainerUi extends VerticalLayout {
     }
 
     private HorizontalLayout getToolbar() {
-        filterText.setPlaceholder("Filter by name...");
+        /*filterText.setPlaceholder("Filter by name...");
         filterText.setClearButtonVisible(true);
         filterText.setValueChangeMode(ValueChangeMode.LAZY);
-        filterText.addValueChangeListener(e -> updateList());
+        filterText.addValueChangeListener(e -> updateList());*/
+        searchBox.setPlaceholder("Search by name...");
+        searchBox.setClearButtonVisible(true);
+        searchBox.addValueChangeListener(e -> updateBox(searchBox.getValue()));
 
         Button addButton = new Button("Add");
         addButton.addClickListener(click -> addContainer());
@@ -59,14 +70,27 @@ public class ContainerUi extends VerticalLayout {
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        HorizontalLayout toolbar = new HorizontalLayout(filterText, addButton, editButton);
+        HorizontalLayout toolbar = new HorizontalLayout(/*filterText,*/ searchBox ,addButton, editButton);
         toolbar.addClassName("toolbar");
         return toolbar;
     }
 
+    private void updateBox(Container searchedContainer) {
+        if (null == searchedContainer){
+            grid.asSingleSelect().setValue(null);
+            grid.collapse(containerService.findAll());
+        }
+        else {
+            grid.collapse(containerService.findAll());
+            grid.expandRecursively(searchedContainer.getAllAncestors(), searchedContainer.getAncestorsNumber());
+            grid.asSingleSelect().setValue(searchedContainer);
+            grid.expand(searchedContainer);
+        }
+    }
+
     private void addContainer() {
         Container actual = grid.asSingleSelect().getValue();
-        grid.asSingleSelect().clear();
+        //grid.asSingleSelect().clear();
         editContainer(new Container(null, actual), true);
     }
 
@@ -95,12 +119,18 @@ public class ContainerUi extends VerticalLayout {
         if (container == null) {
             closeEditor();
         } else {
+
             //Usuwanie potomstwa i container z listy
             List<Container> parentBoxList = containerService.findAll();
             parentBoxList.removeAll(container.getAllDescendants());
 
-            //Kontrola usuwania parent dla edit
-            if (!add) parentBoxList.remove(container); //blokuje add
+            //Kontrola usuwania parent dla edit i nazwa
+            if (!add){
+                form.setOperationName("Edit");
+                parentBoxList.remove(container); //blokuje add
+            } else {
+                form.setOperationName("Add");
+            }
 
             form.setParentComboBox(parentBoxList);
 
@@ -111,15 +141,21 @@ public class ContainerUi extends VerticalLayout {
     }
 
     private void closeEditor() {
+        form.setOperationName("");
         form.setContainer(null);
         form.setVisible(false);
         removeClassName("editing");
     }
 
     private void updateList() {
+        List<Container> containers = containerService.findAll();
+        containers.sort(Comparator.comparing(Container::getHierarchicalName));
+        searchBox.setItems(containers);
+
         //grid.setItems(containerService.findAll(filterText.getValue()));
         form.setParentComboBox(containerService.findAll());
-        //Tree
+
+        //Tree otwiera wszystkie okienka ------------------------------------------------------
         List<Container> nodes = containerService.findAll();
         grid.getTreeData().clear();
         nodes.forEach(n -> grid.getTreeData().addItem(n.getParent(), n));
@@ -130,12 +166,20 @@ public class ContainerUi extends VerticalLayout {
     private void saveContainer(ContainerForm.SaveEvent event) {
         containerService.save(event.getContainer());
         updateList();
+        //Jeśli się udało to zaznacz edytowany container
+        if (containerService.findAll().contains(event.getContainer())) {
+            grid.asSingleSelect().setValue(event.getContainer());
+            Notification.show("Saved: " + event.getContainer().getHierarchicalName());
+        }
         closeEditor();
     }
 
     private void deleteContainer(ContainerForm.DeleteEvent event) {
         containerService.delete(event.getContainer());
         updateList();
+        if (!containerService.findAll().contains(event.getContainer())) {
+            Notification.show("Deleted: " + event.getContainer().getHierarchicalName());
+        }
         closeEditor();
     }
 }
