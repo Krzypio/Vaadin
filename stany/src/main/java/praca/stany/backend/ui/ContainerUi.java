@@ -69,15 +69,51 @@ public class ContainerUi extends VerticalLayout {
         addButton.addClickListener(click -> addContainer());
         Button editButton = new Button ("Edit");
         editButton.addClickListener(click -> editContainer(grid.asSingleSelect().getValue(), false));
+        Button copyButton = new Button ("Copy");
+        copyButton.addClickListener(click -> copyContainer(grid.asSingleSelect().getValue()));
 
         expandButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        copyButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
 
-        HorizontalLayout toolbar = new HorizontalLayout(/*filterText,*/ searchBox ,expandButton, addButton, editButton);
+        HorizontalLayout toolbar = new HorizontalLayout(/*filterText,*/ searchBox ,expandButton, addButton, editButton, copyButton);
         toolbar.addClassName("toolbar");
         return toolbar;
     }
+
+    private void copyContainer(Container chosen) {
+        chosen = containerService.findOne(chosen);  //dzięki temu odświeżamy listę siblings i błąd nie występuje
+        //SIBLINGS
+        Set<String> siblingsName = new HashSet<>();
+        siblingsName.add(chosen.getName());
+        if (chosen.getParent() == null){
+            for (Container rootContainer : containerService.findAll()) {
+                if (rootContainer.getParent() == null)
+                    siblingsName.add(rootContainer.getName());
+            }//for
+        } else {
+            for (Container child: chosen.getParent().getChildren()) {
+                siblingsName.add(child.getName());
+            }//for
+        }//else
+        String newName = chosen.getName() + "_copy";
+        int postfix = 0;
+        while (siblingsName.contains(newName+postfix)){
+            postfix++;
+        }
+        //Skopiowanie roota
+        if (chosen.getParent() == null)
+            containerService.save(new Container(newName+String.valueOf(postfix), null));
+        else
+            containerService.save(new Container(newName+String.valueOf(postfix), chosen.getParent()));
+        //kopiowanie zawartości
+
+        //Zrob tabele zaleznosci oryginal/kopia dla root, pozniej potomstwa, potomstwa potomstwa itd.
+        //tworzenie nazwy nie dziala poprawnie przy kopiowaniu osoby z ojcem
+        updateList();
+    }
+
 
     private void expandCollapse() {
         if(expanded == false){

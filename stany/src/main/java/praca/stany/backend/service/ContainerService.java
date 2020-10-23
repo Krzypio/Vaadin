@@ -26,6 +26,14 @@ public class ContainerService {
         return containerRepository.findAll();
     }
 
+    public Container findOne(Container choosen) {
+        for (Container container: this.findAll()) {
+            if (choosen.getId() == container.getId())
+                return container;
+        }//for
+        return null;
+    }
+
     public List<Container> findAll(String stringFilter){
         if (stringFilter == null || stringFilter.isEmpty()){
             return containerRepository.findAll();
