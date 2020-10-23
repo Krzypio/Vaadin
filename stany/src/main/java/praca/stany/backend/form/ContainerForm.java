@@ -66,7 +66,6 @@ public class ContainerForm extends FormLayout {
         delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
         close.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        save.addClickShortcut(Key.ENTER);
         close.addClickShortcut(Key.ESCAPE);
 
         save.addClickListener(event -> validateAndSave());

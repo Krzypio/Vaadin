@@ -195,8 +195,9 @@ public class ContainerUi extends VerticalLayout {
 
     private void saveContainer(ContainerForm.SaveEvent event) {
         //NAME
-        String name = event.getContainer().getName().trim();    //trim
+        String name = event.getContainer().getName().trim().replaceAll("\\s{2,}", " ");    //trim
         event.getContainer().setName(name);
+        System.out.println("name: \"" + event.getContainer().getName() + "\"");
 
         boolean isAlphaNumeric = name != null &&
                 name.chars().anyMatch(Character::isLetterOrDigit);
