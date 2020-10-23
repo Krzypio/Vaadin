@@ -17,9 +17,7 @@ import praca.stany.backend.entity.Container;
 import praca.stany.backend.form.ContainerForm;
 import praca.stany.backend.service.ContainerService;
 
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 @Route("")
 @CssImport("./styles/container-styles.css")
@@ -28,6 +26,8 @@ public class ContainerUi extends VerticalLayout {
     private TreeGrid<Container> grid = new TreeGrid<>(Container.class);
     //private TextField filterText = new TextField();
     ComboBox<Container> searchBox = new ComboBox<>();
+    boolean expanded = false;
+    private Button expandButton = new Button("Expand ");
 
     private ContainerForm form;
 
@@ -63,17 +63,32 @@ public class ContainerUi extends VerticalLayout {
         searchBox.setClearButtonVisible(true);
         searchBox.addValueChangeListener(e -> updateBox(searchBox.getValue()));
 
+        //expandButton defined in class
+        expandButton.addClickListener(click -> expandCollapse());
         Button addButton = new Button("Add");
         addButton.addClickListener(click -> addContainer());
         Button editButton = new Button ("Edit");
         editButton.addClickListener(click -> editContainer(grid.asSingleSelect().getValue(), false));
 
+        expandButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        HorizontalLayout toolbar = new HorizontalLayout(/*filterText,*/ searchBox ,addButton, editButton);
+        HorizontalLayout toolbar = new HorizontalLayout(/*filterText,*/ searchBox ,expandButton, addButton, editButton);
         toolbar.addClassName("toolbar");
         return toolbar;
+    }
+
+    private void expandCollapse() {
+        if(expanded == false){
+            grid.expand(containerService.findAll());
+            expanded = true;
+            expandButton.setText("Collapse");
+        } else {
+            grid.collapse(containerService.findAll());
+            expanded = false;
+            expandButton.setText("Expand");
+        }
     }
 
     private void updateBox(Container searchedContainer) {
@@ -165,7 +180,7 @@ public class ContainerUi extends VerticalLayout {
 
     private List<Container> getSortedContainers(){
         List<Container> toSortContainers = containerService.findAll();
-        toSortContainers.sort(Comparator.comparing(Container::getName));
+        toSortContainers.sort(Comparator.comparing(Container::getName, String::compareToIgnoreCase).thenComparing(Container::getName));
         List<Container> sortedContainers = new LinkedList<>();
         while (!toSortContainers.isEmpty()){
             for (Container cont: toSortContainers) {
@@ -179,6 +194,36 @@ public class ContainerUi extends VerticalLayout {
     }
 
     private void saveContainer(ContainerForm.SaveEvent event) {
+        //NAME
+        String name = event.getContainer().getName().trim();    //trim
+        event.getContainer().setName(name);
+
+        boolean isAlphaNumeric = name != null &&
+                name.chars().anyMatch(Character::isLetterOrDigit);
+
+        if (!isAlphaNumeric){
+            Notification.show("Error: Container must have a name");
+            return;
+        }
+
+        //SIBLINGS
+        Set<String> siblingsName = new HashSet<>();
+        if (event.getContainer().getParent() == null){
+            for (Container rootContainer : containerService.findAll()) {
+                if (rootContainer.getParent() == null)
+                    siblingsName.add(rootContainer.getName());
+            }//for
+        } else {
+            for (Container child: event.getContainer().getParent().getChildren()) {
+                siblingsName.add(child.getName());
+            }//for
+        }//else
+
+        if (siblingsName.contains(event.getContainer().getName())) {
+            //Jeśli potomstwo ojca zawiera już gościa o takiej nazwie
+            Notification.show("Error: Siblings can not have the same name");
+            return;
+        }
         containerService.save(event.getContainer());
         updateList();
         //Jeśli się udało to zaznacz edytowany container
