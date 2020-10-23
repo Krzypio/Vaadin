@@ -18,6 +18,7 @@ import praca.stany.backend.form.ContainerForm;
 import praca.stany.backend.service.ContainerService;
 
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 
 @Route("")
@@ -90,7 +91,6 @@ public class ContainerUi extends VerticalLayout {
 
     private void addContainer() {
         Container actual = grid.asSingleSelect().getValue();
-        //grid.asSingleSelect().clear();
         editContainer(new Container(null, actual), true);
     }
 
@@ -155,12 +155,27 @@ public class ContainerUi extends VerticalLayout {
         //grid.setItems(containerService.findAll(filterText.getValue()));
         form.setParentComboBox(containerService.findAll());
 
-        //Tree otwiera wszystkie okienka ------------------------------------------------------
-        List<Container> nodes = containerService.findAll();
+        //Aktualizuje wygląd drzewa ------------------------------------------------------
+        List<Container> nodes = getSortedContainers();
         grid.getTreeData().clear();
         nodes.forEach(n -> grid.getTreeData().addItem(n.getParent(), n));
-        grid.expand(nodes);
+        //grid.setSortableColumns("name");
         grid.getDataProvider().refreshAll();    //zawsze odświeży, omija bugi
+    }
+
+    private List<Container> getSortedContainers(){
+        List<Container> toSortContainers = containerService.findAll();
+        toSortContainers.sort(Comparator.comparing(Container::getName));
+        List<Container> sortedContainers = new LinkedList<>();
+        while (!toSortContainers.isEmpty()){
+            for (Container cont: toSortContainers) {
+                if (cont.getParent() == null || sortedContainers.contains(cont.getParent())){
+                    sortedContainers.add(cont);
+                }//if
+            }//for
+            toSortContainers.removeAll(sortedContainers);
+        }
+        return sortedContainers;
     }
 
     private void saveContainer(ContainerForm.SaveEvent event) {
@@ -168,7 +183,9 @@ public class ContainerUi extends VerticalLayout {
         updateList();
         //Jeśli się udało to zaznacz edytowany container
         if (containerService.findAll().contains(event.getContainer())) {
-            grid.asSingleSelect().setValue(event.getContainer());
+            grid.collapse(containerService.findAll());
+            grid.expand(event.getContainer().getAllAncestors());
+            //grid.asSingleSelect().setValue(event.getContainer().getParent());
             Notification.show("Saved: " + event.getContainer().getHierarchicalName());
         }
         closeEditor();
