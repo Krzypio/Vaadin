@@ -70,7 +70,7 @@ public class ContainerUi extends VerticalLayout {
         Button editButton = new Button ("Edit");
         editButton.addClickListener(click -> editContainer(grid.asSingleSelect().getValue(), false));
         Button copyButton = new Button ("Copy");
-        copyButton.addClickListener(click -> copyContainer(grid.asSingleSelect().getValue()));
+        copyButton.addClickListener(click -> copyRoot(grid.asSingleSelect().getValue()));
 
         expandButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -82,36 +82,54 @@ public class ContainerUi extends VerticalLayout {
         return toolbar;
     }
 
-    private void copyContainer(Container chosen) {
+    private void copyRoot(Container parentOriginal) {
+        Container parentCopy = copyOnlyRoot(parentOriginal);
+        Notification.show("Copy " + parentCopy.getName() + " created");
+        //kopiowanie zawartości
+        for (Container childOriginal : parentOriginal.getChildren()) {
+            copyDescendants(childOriginal, parentCopy);
+        }
+        //Zrob tabele zaleznosci oryginal/kopia dla root, pozniej potomstwa, potomstwa potomstwa itd.
+        //tworzenie nazwy nie dziala poprawnie przy kopiowaniu osoby z ojcem
+        updateList();
+    }
+
+    private void copyDescendants(Container descendantOriginal, Container parentCopy){
+        Container descendantCopy = new Container(descendantOriginal.getName(), parentCopy);
+        containerService.save(descendantCopy);
+        for (Container childOriginal : descendantOriginal.getChildren()) {
+            copyDescendants(childOriginal, descendantCopy);
+        }
+    }
+
+    private Container copyOnlyRoot(Container chosen){
         chosen = containerService.findOne(chosen);  //dzięki temu odświeżamy listę siblings i błąd nie występuje
         //SIBLINGS
-        Set<String> siblingsName = new HashSet<>();
-        siblingsName.add(chosen.getName());
+        Set<String> siblingsName1 = new HashSet<>();
+        siblingsName1.add(chosen.getName());
         if (chosen.getParent() == null){
             for (Container rootContainer : containerService.findAll()) {
                 if (rootContainer.getParent() == null)
-                    siblingsName.add(rootContainer.getName());
+                    siblingsName1.add(rootContainer.getName());
             }//for
         } else {
             for (Container child: chosen.getParent().getChildren()) {
-                siblingsName.add(child.getName());
+                siblingsName1.add(child.getName());
             }//for
         }//else
         String newName = chosen.getName() + "_copy";
         int postfix = 0;
-        while (siblingsName.contains(newName+postfix)){
+        while (siblingsName1.contains(newName+postfix)){
             postfix++;
         }
         //Skopiowanie roota
+        Container newOne = new Container(newName+postfix);
         if (chosen.getParent() == null)
-            containerService.save(new Container(newName+String.valueOf(postfix), null));
+            newOne.setParent(null);
         else
-            containerService.save(new Container(newName+String.valueOf(postfix), chosen.getParent()));
-        //kopiowanie zawartości
-
-        //Zrob tabele zaleznosci oryginal/kopia dla root, pozniej potomstwa, potomstwa potomstwa itd.
-        //tworzenie nazwy nie dziala poprawnie przy kopiowaniu osoby z ojcem
-        updateList();
+            newOne.setParent(chosen.getParent());
+        containerService.save(newOne);
+        return newOne;
     }
 
 
@@ -233,7 +251,6 @@ public class ContainerUi extends VerticalLayout {
         //NAME
         String name = event.getContainer().getName().trim().replaceAll("\\s{2,}", " ");    //trim
         event.getContainer().setName(name);
-        System.out.println("name: \"" + event.getContainer().getName() + "\"");
 
         boolean isAlphaNumeric = name != null &&
                 name.chars().anyMatch(Character::isLetterOrDigit);
@@ -251,7 +268,10 @@ public class ContainerUi extends VerticalLayout {
                     siblingsName.add(rootContainer.getName());
             }//for
         } else {
-            for (Container child: event.getContainer().getParent().getChildren()) {
+            //rozwiązanie błędu z edycją kontenerów z parent
+            Set<Container> siblings = event.getContainer().getParent().getChildren();
+            if (siblings.contains(event.getContainer())) siblings.remove(event.getContainer());
+            for (Container child: siblings) {
                 siblingsName.add(child.getName());
             }//for
         }//else
@@ -274,6 +294,11 @@ public class ContainerUi extends VerticalLayout {
     }
 
     private void deleteContainer(ContainerForm.DeleteEvent event) {
+        if (!event.getContainer().getChildren().isEmpty()){
+            Notification.show("Error: " + event.getContainer().getHierarchicalName() + " have descendants. Remove them first.");
+            return;
+        }
+
         containerService.delete(event.getContainer());
         updateList();
         if (!containerService.findAll().contains(event.getContainer())) {

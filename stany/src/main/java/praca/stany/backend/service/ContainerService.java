@@ -6,8 +6,7 @@ import praca.stany.backend.entity.Container;
 import praca.stany.backend.repository.ContainerRepository;
 
 import javax.annotation.PostConstruct;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -74,10 +73,26 @@ public class ContainerService {
 
     @PostConstruct
     public void populateTestData() {
-        Container tata = new Container("Tata");
-        save(tata);
 
-        Container syn = new Container("syn", tata);
-        save(syn);
+        if (containerRepository.count() == 0) {
+
+            Container wzorNp460 = new Container("wzor_460R");
+            save(wzorNp460);
+
+            Container st0 = new Container("st 0", wzorNp460);
+            Container st1 = new Container("st I", wzorNp460);
+            Container st2 = new Container("st II", wzorNp460);
+            Container st3 = new Container("st III", wzorNp460);
+            Container st4 = new Container("st IV", wzorNp460);
+            Container st5 = new Container("st IV", wzorNp460);
+
+            Container st0_noz = new Container("nóż ucinający", st0);
+            Container st0_tuleja = new Container("tuleja tnąca", st0);
+
+            List<Container> stanowiska = Arrays.asList(st0, st1, st2, st3, st4, st5);
+            List<Container> narzedzia = Arrays.asList(st0_tuleja, st0_noz);
+            containerRepository.saveAll(stanowiska);
+            containerRepository.saveAll(narzedzia);
+        }//if
     }//populateTestData()
 }
