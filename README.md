@@ -1,5 +1,5 @@
 # Vaadin
-Projekt Java Web App z wykorzystaniem Maven, Spring Boot, Hibernate, Vaadin. Aktualnie Server Tomcat i baza danych H2. Ostatecznie użyty będzie WildFly i MySql.
+Projekt Java Web App z wykorzystaniem Maven, Spring Boot, Hibernate, Vaadin. Aktualnie server Tomcat i baza danych H2. Ostatecznie użyty będzie WildFly i MySql.
 
 Cel: określenie możliwości realizacji planu produkcji przy wykorzystaniu posiadanych zasobów narzędzi, lista narzędzi do przeniesienia, .
 
